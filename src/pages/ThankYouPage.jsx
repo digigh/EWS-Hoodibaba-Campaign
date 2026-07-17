@@ -26,13 +26,16 @@ export const ThankYouPage = () => {
     const userAgent = navigator.userAgent || navigator.vendor || window.opera;
     const isAndroid = /android/i.test(userAgent);
     const isIOS = /iPad|iPhone|iPod/.test(userAgent) && !window.MSStream;
+    
+    // The numeric Page ID for india.ews is required for native app deep linking
+    const pageId = '100064050637178';
 
     if (isAndroid) {
-      // Attempt to open Facebook App directly to the page on Android
-      window.location.href = 'intent://page/india.ews#Intent;package=com.facebook.katana;scheme=fb;end';
+      // Android intent using the numeric page ID
+      window.location.href = `intent://page/${pageId}#Intent;package=com.facebook.katana;scheme=fb;end`;
     } else if (isIOS) {
-      // Attempt to open Facebook App directly to the page on iOS
-      window.location.href = 'fb://profile/india.ews';
+      // iOS fb scheme using the numeric profile ID
+      window.location.href = `fb://profile/${pageId}`;
     } else {
       // Desktop or other: just open the web URL directly
       window.location.href = FACEBOOK_URL;
