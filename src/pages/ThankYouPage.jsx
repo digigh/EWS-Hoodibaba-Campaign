@@ -27,22 +27,25 @@ export const ThankYouPage = () => {
     const isAndroid = /android/i.test(userAgent);
     const isIOS = /iPad|iPhone|iPod/.test(userAgent) && !window.MSStream;
 
-    if (isAndroid || isIOS) {
-      // Attempt to open Facebook App via deep link
-      const appUrl = `fb://facewebmodal/f?href=${FACEBOOK_URL}`;
-      window.location.href = appUrl;
-      
-      // Fallback to browser URL if the app isn't installed
-      setTimeout(() => {
-        // Only redirect to web if the browser is still in the foreground
-        if (!document.hidden) {
-          window.location.href = FACEBOOK_URL;
-        }
-      }, 1500);
+    if (isAndroid) {
+      // Attempt to open Facebook App directly to the page on Android
+      window.location.href = 'intent://page/india.ews#Intent;package=com.facebook.katana;scheme=fb;end';
+    } else if (isIOS) {
+      // Attempt to open Facebook App directly to the page on iOS
+      window.location.href = 'fb://profile/india.ews';
     } else {
       // Desktop or other: just open the web URL directly
       window.location.href = FACEBOOK_URL;
+      return;
     }
+    
+    // Fallback to browser URL if the app isn't installed
+    setTimeout(() => {
+      // Only redirect to web if the browser is still in the foreground
+      if (!document.hidden) {
+        window.location.href = FACEBOOK_URL;
+      }
+    }, 1500);
   };
 
   return (
