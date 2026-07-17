@@ -21,7 +21,28 @@ export const ThankYouPage = () => {
 
   const handleFacebookRedirect = () => {
     sendWebhookEvent('facebook_redirect', { tsm: formData.tsm });
-    window.location.href = FACEBOOK_URL;
+    
+    // Check if the user is on a mobile device
+    const userAgent = navigator.userAgent || navigator.vendor || window.opera;
+    const isAndroid = /android/i.test(userAgent);
+    const isIOS = /iPad|iPhone|iPod/.test(userAgent) && !window.MSStream;
+
+    if (isAndroid || isIOS) {
+      // Attempt to open Facebook App via deep link
+      const appUrl = `fb://facewebmodal/f?href=${FACEBOOK_URL}`;
+      window.location.href = appUrl;
+      
+      // Fallback to browser URL if the app isn't installed
+      setTimeout(() => {
+        // Only redirect to web if the browser is still in the foreground
+        if (!document.hidden) {
+          window.location.href = FACEBOOK_URL;
+        }
+      }, 1500);
+    } else {
+      // Desktop or other: just open the web URL directly
+      window.location.href = FACEBOOK_URL;
+    }
   };
 
   return (
