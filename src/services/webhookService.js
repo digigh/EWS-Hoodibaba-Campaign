@@ -1,4 +1,4 @@
-export const WEBHOOK_URL = 'https://aiautomation.digicides.com/webhook-test/ews-hoodibaba';
+export const WEBHOOK_URL = 'https://aiautomation.digicides.com/webhook/ews-hoodibaba';
 export const FACEBOOK_URL = 'https://www.facebook.com/india.ews';
 
 export const sendWebhookEvent = async (eventName, payload) => {
