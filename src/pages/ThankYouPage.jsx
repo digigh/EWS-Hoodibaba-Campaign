@@ -34,8 +34,8 @@ export const ThankYouPage = () => {
       // Android intent using the numeric page ID
       window.location.href = `intent://page/${pageId}#Intent;package=com.facebook.katana;scheme=fb;end`;
     } else if (isIOS) {
-      // iOS fb scheme using the numeric profile ID
-      window.location.href = `fb://profile/${pageId}`;
+      // iOS fb scheme using the numeric page ID (using ?id= format which is more reliable for pages on iOS)
+      window.location.href = `fb://page/?id=${pageId}`;
     } else {
       // Desktop or other: just open the web URL directly
       window.location.href = FACEBOOK_URL;
