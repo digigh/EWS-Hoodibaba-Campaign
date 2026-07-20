@@ -6,7 +6,7 @@ import { FarmerDetailsPage } from './pages/FarmerDetailsPage';
 import { LocationPage } from './pages/LocationPage';
 import { ThankYouPage } from './pages/ThankYouPage';
 import { Stepper } from './components/Stepper';
-import { sendWebhookEvent } from './services/webhookService';
+
 import './styles/global.css';
 
 const AppContent = () => {
@@ -20,8 +20,7 @@ const AppContent = () => {
     
     updateFormData({ tsm: tsmParam });
     
-    // Log page open event
-    sendWebhookEvent('page_open', { url: window.location.href, tsm: tsmParam });
+
   }, []);
 
   if (error) {

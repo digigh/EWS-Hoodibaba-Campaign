@@ -5,7 +5,7 @@ import { useTranslation } from '../hooks/useTranslation';
 import { Card } from '../components/Card';
 import { Button } from '../components/Button';
 import { Select } from '../components/Input';
-import { sendWebhookEvent } from '../services/webhookService';
+
 
 export const LanguagePage = () => {
   const { formData, updateFormData, nextStep } = useForm();
@@ -18,7 +18,7 @@ export const LanguagePage = () => {
 
   const handleNext = () => {
     if (formData.language) {
-      sendWebhookEvent('language_selected', { language: formData.language, tsm: formData.tsm });
+
       nextStep();
     }
   };

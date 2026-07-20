@@ -32,12 +32,7 @@ export const LocationPage = () => {
       setIsSubmitting(true);
       
       // Fire webhooks
-      await sendWebhookEvent('location_completed', { 
-        tsm: formData.tsm,
-        state: formData.state,
-        district: formData.district
-      });
-      
+
       await sendWebhookEvent('form_submitted', { 
         ...formData
       });

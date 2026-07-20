@@ -5,7 +5,7 @@ import { useTranslation } from '../hooks/useTranslation';
 import { Card } from '../components/Card';
 import { Button } from '../components/Button';
 import { Input, Select } from '../components/Input';
-import { sendWebhookEvent } from '../services/webhookService';
+
 
 export const FarmerDetailsPage = () => {
   const { formData, updateFormData, nextStep, prevStep } = useForm();
@@ -34,13 +34,7 @@ export const FarmerDetailsPage = () => {
 
   const handleNext = () => {
     if (validate()) {
-      sendWebhookEvent('farmer_details_completed', { 
-        tsm: formData.tsm,
-        mobile: formData.mobile,
-        name: formData.name,
-        crop: formData.crop,
-        product: formData.product
-      });
+
       nextStep();
     }
   };
