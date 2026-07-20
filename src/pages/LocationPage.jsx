@@ -27,13 +27,12 @@ export const LocationPage = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = () => {
     if (validate()) {
       setIsSubmitting(true);
       
       // Fire webhooks
-
-      await sendWebhookEvent('form_submitted', { 
+      sendWebhookEvent('form_submitted', { 
         ...formData
       });
 
