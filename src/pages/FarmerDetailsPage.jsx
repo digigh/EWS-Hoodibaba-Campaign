@@ -27,6 +27,8 @@ export const FarmerDetailsPage = () => {
     }
     if (!formData.product) {
       newErrors.product = t('Select Product');
+    } else if (formData.product === 'Others' && (!formData.otherProduct || !formData.otherProduct.trim())) {
+      newErrors.otherProduct = t('Please specify the product');
     }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -96,7 +98,7 @@ export const FarmerDetailsPage = () => {
 
   const productOptions = useMemo(() => {
     if (!formData.crop) return [];
-    return cropProductMapping
+    const options = cropProductMapping
       .filter(c => (c.crop || c.Crop) === formData.crop && (c.product || c.Product))
       .map(c => {
         const baseProduct = c.product || c.Product;
@@ -105,7 +107,11 @@ export const FarmerDetailsPage = () => {
           label: c[productCol] || baseProduct // Use translated label if available
         };
       });
-  }, [cropProductMapping, formData.crop, productCol]);
+      
+    // Append Others option
+    options.push({ value: 'Others', label: t('Others') || 'Others' });
+    return options;
+  }, [cropProductMapping, formData.crop, productCol, t]);
 
   return (
     <Card>
@@ -148,11 +154,22 @@ export const FarmerDetailsPage = () => {
         label={t('Select Product')}
         options={productOptions}
         value={formData.product}
-        onChange={e => updateFormData({ product: e.target.value })}
+        onChange={e => updateFormData({ product: e.target.value, otherProduct: '' })}
         error={errors.product}
         placeholder={t('Select Product')}
         disabled={!formData.crop}
       />
+
+      {formData.product === 'Others' && (
+        <Input
+          label={t('Please specify the product')}
+          type="text"
+          value={formData.otherProduct || ''}
+          onChange={e => updateFormData({ otherProduct: e.target.value })}
+          error={errors.otherProduct}
+          placeholder={t('Please specify the product')}
+        />
+      )}
 
       <div style={{ display: 'flex', gap: '16px', marginTop: '32px' }}>
         <Button variant="outline" fullWidth onClick={prevStep}>
