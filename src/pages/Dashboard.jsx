@@ -25,6 +25,31 @@ export const Dashboard = () => {
   useEffect(() => {
     if (!isLoggedIn) return;
     fetchData();
+
+    // Set up real-time subscription for live updates
+    const subscription = supabase
+      .channel('responses-channel')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'responses' },
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            // Prepend new response for instant update without loading spinner
+            setData(prev => ({
+              ...prev,
+              responses: [payload.new, ...prev.responses]
+            }));
+          } else {
+            // For updates/deletes, refetch entirely to keep data perfectly synced
+            fetchData();
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(subscription);
+    };
   }, [isLoggedIn]);
 
   const fetchData = async () => {
