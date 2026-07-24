@@ -5,6 +5,7 @@ import { LanguagePage } from './pages/LanguagePage';
 import { FarmerDetailsPage } from './pages/FarmerDetailsPage';
 import { LocationPage } from './pages/LocationPage';
 import { ThankYouPage } from './pages/ThankYouPage';
+import { Dashboard } from './pages/Dashboard';
 import { Stepper } from './components/Stepper';
 
 import './styles/global.css';
@@ -63,6 +64,12 @@ const AppContent = () => {
 };
 
 function App() {
+  const isDashboard = window.location.pathname === '/dashboard';
+
+  if (isDashboard) {
+    return <Dashboard />;
+  }
+
   return (
     <DataProvider>
       <FormProvider>

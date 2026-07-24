@@ -1,5 +1,6 @@
 export const WEBHOOK_URL = 'https://aiautomation.digicides.com/webhook/ews-hoodibaba';
 export const FACEBOOK_URL = 'https://www.facebook.com/india.ews';
+import { supabase } from '../lib/supabaseClient';
 
 export const sendWebhookEvent = async (eventName, payload) => {
   try {
@@ -30,6 +31,27 @@ export const sendWebhookEvent = async (eventName, payload) => {
 
     if (!response.ok) {
       console.error(`Webhook failed for event ${eventName} with status ${response.status}`);
+    }
+
+    if (eventName === 'form_submitted') {
+      const { error: dbError } = await supabase
+        .from('responses')
+        .insert([{
+          tsm_name: tsm,
+          farmer_name: payload.name,
+          mobile: payload.mobile,
+          crop: payload.crop,
+          product: payload.product,
+          other_product: payload.otherProduct,
+          state: payload.state,
+          district: payload.district,
+          language: payload.language,
+          url: currentUrl
+        }]);
+      
+      if (dbError) {
+        console.error('Supabase insert failed:', dbError);
+      }
     }
   } catch (error) {
     // Graceful error handling for offline/failed webhooks
