@@ -7,9 +7,12 @@ import {
   LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, 
   Tooltip, ResponsiveContainer, PieChart, Pie, Cell 
 } from 'recharts';
-import { Eye, Users, MousePointerClick, ShoppingBag, ArrowUpRight, MoreHorizontal, Calendar, Filter, RefreshCw, Download } from 'lucide-react';
+import { 
+  Eye, Users, MousePointerClick, ShoppingBag, ArrowUpRight, MoreHorizontal, 
+  Calendar, Filter, RefreshCw, Download, MapPin, Map, Navigation, Box 
+} from 'lucide-react';
 
-const COLORS = ['#4318ff', '#6ad2ff', '#e2e8f0', '#05cd99', '#ffb547'];
+const COLORS = ['#4318ff', '#6ad2ff', '#ff6b6b', '#05cd99', '#ffb547'];
 const LANG_COLORS = ['#4318ff', '#6ad2ff', '#05cd99', '#ffb547', '#ff6b6b'];
 
 export const Dashboard = () => {
@@ -107,11 +110,15 @@ export const Dashboard = () => {
 
   const metrics = useMemo(() => {
     const regionCounts = {}; const cropCounts = {}; const dateCounts = {}; const languageCounts = {}; const stateCounts = {};
+    const territoryCounts = {}; const districtCounts = {}; const productCounts = {};
     const tsmStats = {};
 
     filteredData.forEach(d => {
       regionCounts[d.region] = (regionCounts[d.region] || 0) + 1;
       cropCounts[d.crop] = (cropCounts[d.crop] || 0) + 1;
+      if (d.territory) territoryCounts[d.territory] = (territoryCounts[d.territory] || 0) + 1;
+      if (d.district) districtCounts[d.district] = (districtCounts[d.district] || 0) + 1;
+      if (d.real_product) productCounts[d.real_product] = (productCounts[d.real_product] || 0) + 1;
       if (d.language) languageCounts[d.language] = (languageCounts[d.language] || 0) + 1;
       if (d.state) stateCounts[d.state] = (stateCounts[d.state] || 0) + 1;
       
@@ -128,6 +135,10 @@ export const Dashboard = () => {
       activeTsms: Object.keys(tsmStats).length,
       topRegion: Object.keys(regionCounts).sort((a, b) => regionCounts[b] - regionCounts[a])[0] || 'N/A',
       topCrop: Object.keys(cropCounts).sort((a, b) => cropCounts[b] - cropCounts[a])[0] || 'N/A',
+      topTerritory: Object.keys(territoryCounts).sort((a, b) => territoryCounts[b] - territoryCounts[a])[0] || 'N/A',
+      topDistrict: Object.keys(districtCounts).sort((a, b) => districtCounts[b] - districtCounts[a])[0] || 'N/A',
+      topState: Object.keys(stateCounts).sort((a, b) => stateCounts[b] - stateCounts[a])[0] || 'N/A',
+      topProduct: Object.keys(productCounts).sort((a, b) => productCounts[b] - productCounts[a])[0] || 'N/A',
       cropChartData: Object.keys(cropCounts).map(k => ({ name: k, value: cropCounts[k] })),
       languageChartData: Object.keys(languageCounts).map(k => ({ name: k, value: languageCounts[k] })),
       mapData: Object.keys(stateCounts).map(k => ({ state: k, count: stateCounts[k] })),
@@ -284,12 +295,12 @@ export const Dashboard = () => {
         </div>
       </div>
 
-      {/* 4 KPIs */}
+      {/* 8 KPIs */}
       <div className="kpi-grid">
         <div className="clean-card kpi-card">
           <div className="kpi-top">
             <span className="kpi-title">Total Farmers</span>
-            <Users className="kpi-icon" size={24} />
+            <Users className="kpi-icon" size={20} />
           </div>
           <div className="kpi-middle">
             <span className="kpi-value">{metrics.totalFarmers.toLocaleString()}</span>
@@ -301,7 +312,7 @@ export const Dashboard = () => {
         <div className="clean-card kpi-card">
           <div className="kpi-top">
             <span className="kpi-title">Active TSMs</span>
-            <Eye className="kpi-icon" size={24} />
+            <Eye className="kpi-icon" size={20} />
           </div>
           <div className="kpi-middle">
             <span className="kpi-value">{metrics.activeTsms}</span>
@@ -312,24 +323,68 @@ export const Dashboard = () => {
 
         <div className="clean-card kpi-card">
           <div className="kpi-top">
-            <span className="kpi-title">Top Region</span>
-            <MousePointerClick className="kpi-icon" size={24} />
+            <span className="kpi-title">Top Crop</span>
+            <ShoppingBag className="kpi-icon" size={20} />
           </div>
           <div className="kpi-middle">
-            <span className="kpi-value">{metrics.topRegion}</span>
+            <span className="kpi-value" title={metrics.topCrop}>{metrics.topCrop}</span>
+          </div>
+          <span className="kpi-bottom">Most popular choice</span>
+        </div>
+
+        <div className="clean-card kpi-card">
+          <div className="kpi-top">
+            <span className="kpi-title">Top Product</span>
+            <Box className="kpi-icon" size={20} />
+          </div>
+          <div className="kpi-middle">
+            <span className="kpi-value" title={metrics.topProduct}>{metrics.topProduct}</span>
+          </div>
+          <span className="kpi-bottom">Highest volume</span>
+        </div>
+
+        <div className="clean-card kpi-card">
+          <div className="kpi-top">
+            <span className="kpi-title">Top Region</span>
+            <MousePointerClick className="kpi-icon" size={20} />
+          </div>
+          <div className="kpi-middle">
+            <span className="kpi-value" title={metrics.topRegion}>{metrics.topRegion}</span>
           </div>
           <span className="kpi-bottom">Highest engagement</span>
         </div>
 
         <div className="clean-card kpi-card">
           <div className="kpi-top">
-            <span className="kpi-title">Top Crop</span>
-            <ShoppingBag className="kpi-icon" size={24} />
+            <span className="kpi-title">Top Territory</span>
+            <Navigation className="kpi-icon" size={20} />
           </div>
           <div className="kpi-middle">
-            <span className="kpi-value">{metrics.topCrop}</span>
+            <span className="kpi-value" title={metrics.topTerritory}>{metrics.topTerritory}</span>
           </div>
-          <span className="kpi-bottom">Most popular choice</span>
+          <span className="kpi-bottom">Leading area</span>
+        </div>
+
+        <div className="clean-card kpi-card">
+          <div className="kpi-top">
+            <span className="kpi-title">Top District</span>
+            <MapPin className="kpi-icon" size={20} />
+          </div>
+          <div className="kpi-middle">
+            <span className="kpi-value" title={metrics.topDistrict}>{metrics.topDistrict}</span>
+          </div>
+          <span className="kpi-bottom">Top performing</span>
+        </div>
+
+        <div className="clean-card kpi-card">
+          <div className="kpi-top">
+            <span className="kpi-title">Top State</span>
+            <Map className="kpi-icon" size={20} />
+          </div>
+          <div className="kpi-middle">
+            <span className="kpi-value" title={metrics.topState}>{metrics.topState}</span>
+          </div>
+          <span className="kpi-bottom">State with most users</span>
         </div>
       </div>
 

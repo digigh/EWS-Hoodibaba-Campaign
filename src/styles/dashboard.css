@@ -154,7 +154,11 @@ select.filter-input {
 .kpi-card {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
+}
+
+.clean-card.kpi-card {
+  padding: 16px 20px;
 }
 
 .kpi-top {
@@ -180,10 +184,14 @@ select.filter-input {
 }
 
 .kpi-value {
-  font-size: 32px;
+  font-size: 22px;
   font-weight: 700;
   color: var(--text-main);
   letter-spacing: -1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
 }
 
 .kpi-badge {
