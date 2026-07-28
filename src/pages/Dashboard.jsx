@@ -9,7 +9,8 @@ import {
 } from 'recharts';
 import { 
   Eye, Users, MousePointerClick, ShoppingBag, ArrowUpRight, MoreHorizontal, 
-  Calendar, Filter, RefreshCw, Download, MapPin, Map, Navigation, Box 
+  Calendar, Filter, RefreshCw, Download, MapPin, Map, Navigation, Box,
+  Trophy, Home
 } from 'lucide-react';
 
 const COLORS = ['#4318ff', '#6ad2ff', '#ff6b6b', '#05cd99', '#ffb547'];
@@ -20,6 +21,7 @@ export const Dashboard = () => {
   const [data, setData] = useState({ responses: [], mapping: [] });
   const [loading, setLoading] = useState(true);
   const [showDownloadModal, setShowDownloadModal] = useState(false);
+  const [currentView, setCurrentView] = useState('main'); // 'main' or 'metrics'
   
   const [filters, setFilters] = useState({
     region: '', territory: '', tsm: '', state: '', district: '', crop: '', product: '', language: '', startDate: '', endDate: ''
@@ -142,8 +144,13 @@ export const Dashboard = () => {
     const regionCounts = {}; const cropCounts = {}; const dateCounts = {}; const languageCounts = {}; const stateCounts = {};
     const territoryCounts = {}; const districtCounts = {}; const productCounts = {};
     const tsmStats = {};
+    let optInYes = 0;
+    let optInNo = 0;
 
     filteredData.forEach(d => {
+      if (d.opt_in === 'Yes') optInYes++;
+      if (d.opt_in === 'No') optInNo++;
+
       regionCounts[d.region] = (regionCounts[d.region] || 0) + 1;
       cropCounts[d.crop] = (cropCounts[d.crop] || 0) + 1;
       if (d.territory) territoryCounts[d.territory] = (territoryCounts[d.territory] || 0) + 1;
@@ -163,6 +170,8 @@ export const Dashboard = () => {
     return {
       totalFarmers: filteredData.length,
       activeTsms: Object.keys(tsmStats).length,
+      optInYes,
+      optInNo,
       topRegion: Object.keys(regionCounts).sort((a, b) => regionCounts[b] - regionCounts[a])[0] || 'N/A',
       topCrop: Object.keys(cropCounts).sort((a, b) => cropCounts[b] - cropCounts[a])[0] || 'N/A',
       topTerritory: Object.keys(territoryCounts).sort((a, b) => territoryCounts[b] - territoryCounts[a])[0] || 'N/A',
@@ -228,6 +237,55 @@ export const Dashboard = () => {
   // Options for selects
   const getUnique = (key) => [...new Set(enrichedResponses.map(r => key === 'tsm' ? r.tsm_name_display : r[key]).filter(Boolean))].sort();
 
+  // Top 10 Helper
+  const getTop10 = (dataset, key) => {
+    const counts = {};
+    dataset.forEach(d => {
+      let val = d[key];
+      if (key === 'product') val = d.real_product;
+      if (key === 'tsm') val = d.tsm_name_display;
+      
+      if (val && val !== 'Unknown') {
+        counts[val] = (counts[val] || 0) + 1;
+      }
+    });
+    return Object.entries(counts)
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 10);
+  };
+
+  const downloadTop10CSV = () => {
+    const categories = [
+      { key: 'tsm', title: 'Top 10 TSMs' },
+      { key: 'crop', title: 'Top 10 Crops' },
+      { key: 'state', title: 'Top 10 States' },
+      { key: 'product', title: 'Top 10 Products' },
+      { key: 'region', title: 'Top 10 Regions' },
+      { key: 'territory', title: 'Top 10 Territories' }
+    ];
+
+    let csvContent = "";
+    categories.forEach(cat => {
+      csvContent += `--- ${cat.title} ---\nName,Count\n`;
+      const top10 = getTop10(enrichedResponses, cat.key);
+      top10.forEach(item => {
+        csvContent += `"${item.name}",${item.count}\n`;
+      });
+      csvContent += `\n`; // Empty row
+    });
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `ews_top_10_metrics_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   if (!isLoggedIn) return <Login onLogin={() => setIsLoggedIn(true)} />;
   if (loading) return <div style={{height:'100vh', display:'flex', alignItems:'center', justifyContent:'center'}}><RefreshCw className="animate-spin" color="#4318ff" size={40} /></div>;
 
@@ -241,16 +299,48 @@ export const Dashboard = () => {
           <h1 className="page-title">Dashboard</h1>
         </div>
 
+        <div className="header-middle" style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+          <div style={{ background: 'var(--card-bg)', padding: '10px 20px', borderRadius: '30px', boxShadow: '0 4px 10px rgba(112, 144, 176, 0.08)', display: 'flex', gap: '12px', alignItems: 'center' }}>
+            <span style={{ fontSize: '13px', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Opt-Ins</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'rgba(5, 205, 153, 0.1)', padding: '4px 12px', borderRadius: '20px' }}>
+              <span style={{ color: '#05cd99', fontWeight: 800, fontSize: '16px' }}>{metrics.optInYes}</span>
+              <span style={{ color: '#05cd99', fontWeight: 600, fontSize: '12px' }}>YES</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'rgba(255, 107, 107, 0.1)', padding: '4px 12px', borderRadius: '20px' }}>
+              <span style={{ color: '#ff6b6b', fontWeight: 800, fontSize: '16px' }}>{metrics.optInNo}</span>
+              <span style={{ color: '#ff6b6b', fontWeight: 600, fontSize: '12px' }}>NO</span>
+            </div>
+          </div>
+        </div>
+
         <div className="header-actions">
-          <button className="btn-primary" onClick={resetFilters}>
-            <RefreshCw size={16} /> Reset
-          </button>
-          <button className="btn-primary" onClick={triggerDownload} style={{ background: '#05cd99', boxShadow: '0px 4px 10px rgba(5, 205, 153, 0.3)' }}>
-            <Download size={16} /> Export CSV
-          </button>
+          {currentView === 'main' ? (
+            <>
+              <button className="btn-glowing" onClick={() => setCurrentView('metrics')}>
+                <Trophy size={16} /> Top 10 Metrics
+              </button>
+              <button className="btn-primary" onClick={resetFilters}>
+                <RefreshCw size={16} /> Reset
+              </button>
+              <button className="btn-primary" onClick={triggerDownload} style={{ background: '#05cd99', boxShadow: '0px 4px 10px rgba(5, 205, 153, 0.3)' }}>
+                <Download size={16} /> Export CSV
+              </button>
+            </>
+          ) : (
+            <>
+              <button className="btn-primary" onClick={() => setCurrentView('main')}>
+                <Home size={16} /> Back to Dashboard
+              </button>
+              <button className="btn-primary" onClick={downloadTop10CSV} style={{ background: '#05cd99', boxShadow: '0px 4px 10px rgba(5, 205, 153, 0.3)' }}>
+                <Download size={16} /> Download Report
+              </button>
+            </>
+          )}
         </div>
       </div>
 
+      {currentView === 'main' ? (
+        <>
       {/* Filter Bar */}
       <div className="filters-bar">
         <div className="filter-pill">
@@ -571,6 +661,53 @@ export const Dashboard = () => {
           </div>
         </div>
       </div>
+        </>
+      ) : (
+        <div className="top10-grid">
+          {[
+            { key: 'tsm', title: 'Top 10 TSMs', icon: <Eye size={20} color="#4318ff"/> },
+            { key: 'crop', title: 'Top 10 Crops', icon: <ShoppingBag size={20} color="#ffb547"/> },
+            { key: 'state', title: 'Top 10 States', icon: <Map size={20} color="#05cd99"/> },
+            { key: 'product', title: 'Top 10 Products', icon: <Box size={20} color="#6ad2ff"/> },
+            { key: 'region', title: 'Top 10 Regions', icon: <MousePointerClick size={20} color="#ff6b6b"/> },
+            { key: 'territory', title: 'Top 10 Territories', icon: <Navigation size={20} color="#4318ff"/> }
+          ].map(cat => (
+            <div key={cat.key} className="clean-card" style={{ padding: '24px 0' }}>
+              <div className="chart-header" style={{ padding: '0 24px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                {cat.icon}
+                <h3 className="chart-title">{cat.title}</h3>
+              </div>
+              <div className="table-container" style={{ marginTop: '16px' }}>
+                <table className="modern-table">
+                  <thead>
+                    <tr>
+                      <th style={{ width: '40px', textAlign: 'center' }}>#</th>
+                      <th>NAME</th>
+                      <th style={{ textAlign: 'right' }}>COUNT</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {getTop10(enrichedResponses, cat.key).map((item, i) => (
+                      <tr key={i}>
+                        <td style={{ textAlign: 'center', color: '#a3aed0', fontWeight: 600 }}>{i + 1}</td>
+                        <td style={{ fontWeight: 600, color: '#2b3674' }}>{item.name}</td>
+                        <td style={{ textAlign: 'right' }}>
+                          <span className="badge-text" style={{ background: 'rgba(67, 24, 255, 0.05)', color: '#4318ff', padding: '4px 12px', borderRadius: '12px' }}>
+                            {item.count.toLocaleString()}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                    {getTop10(enrichedResponses, cat.key).length === 0 && (
+                      <tr><td colSpan="3" style={{ textAlign: 'center', padding: '20px', color: '#a3aed0' }}>No data available</td></tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Download Modal */}
       {showDownloadModal && (

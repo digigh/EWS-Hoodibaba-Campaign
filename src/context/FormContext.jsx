@@ -11,7 +11,8 @@ export const FormProvider = ({ children }) => {
     product: '',
     state: '',
     district: '',
-    tsm: '' // We will extract this from the URL on load
+    tsm: '', // We will extract this from the URL on load
+    opt_in: true // Checked by default for Privacy Policy
   });
 
   const [currentStep, setCurrentStep] = useState(1);

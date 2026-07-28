@@ -356,3 +356,46 @@ select.filter-input {
     flex: 1 1 100%;
   }
 }
+
+/* New Metrics View Styles */
+.btn-glowing {
+  background: linear-gradient(45deg, #ff007f, #7928ca);
+  color: white;
+  border: none;
+  border-radius: 30px;
+  padding: 10px 24px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 0 15px rgba(255, 0, 127, 0.5);
+  animation: glow 2s infinite alternate;
+  transition: all 0.3s ease;
+}
+
+.btn-glowing:hover {
+  transform: translateY(-3px) scale(1.05);
+  box-shadow: 0 0 25px rgba(255, 0, 127, 0.8), 0 0 35px rgba(121, 40, 202, 0.8);
+}
+
+@keyframes glow {
+  from { box-shadow: 0 0 10px rgba(255, 0, 127, 0.4); }
+  to { box-shadow: 0 0 20px rgba(121, 40, 202, 0.6); }
+}
+
+.top10-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  margin-top: 20px;
+}
+
+@media (max-width: 1200px) {
+  .top10-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 768px) {
+  .top10-grid { grid-template-columns: 1fr; }
+}

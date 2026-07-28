@@ -16,6 +16,10 @@ export const LanguagePage = () => {
     updateFormData({ language: e.target.value });
   };
 
+  const handleOptInChange = (e) => {
+    updateFormData({ opt_in: e.target.checked });
+  };
+
   const handleNext = () => {
     if (formData.language) {
 
@@ -43,6 +47,19 @@ export const LanguagePage = () => {
         options={langOptions}
         placeholder="Select Language / भाषा चुनें"
       />
+
+      <div style={{ marginTop: '24px', display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+        <input 
+          type="checkbox" 
+          id="privacy-opt-in" 
+          checked={formData.opt_in} 
+          onChange={handleOptInChange}
+          style={{ marginTop: '4px', transform: 'scale(1.2)', cursor: 'pointer' }}
+        />
+        <label htmlFor="privacy-opt-in" style={{ fontSize: '14px', color: 'var(--color-text)', lineHeight: '1.5' }}>
+          I agree to the <a href="https://www.eastwestseed.com/privacy-policy/" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--color-primary-dark)', textDecoration: 'underline', fontWeight: 'bold' }}>Privacy Policy</a> and consent to having my data collected and processed.
+        </label>
+      </div>
       
       <div style={{ marginTop: '32px' }}>
         <Button 

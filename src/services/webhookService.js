@@ -31,6 +31,8 @@ export const sendWebhookEvent = async (eventName, payload) => {
       }
     }
 
+    const optInStr = payload.opt_in ? 'Yes' : 'No';
+
     const data = {
       event: eventName,
       timestamp,
@@ -38,6 +40,7 @@ export const sendWebhookEvent = async (eventName, payload) => {
       url: currentUrl,
       territory,
       region,
+      opt_in: optInStr,
       ...payload
     };
 
@@ -70,7 +73,8 @@ export const sendWebhookEvent = async (eventName, payload) => {
           language: payload.language,
           url: currentUrl,
           territory: territory,
-          region: region
+          region: region,
+          opt_in: optInStr
         }]);
       
       if (dbError) {
