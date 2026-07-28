@@ -55,15 +55,45 @@ export const Dashboard = () => {
     };
   }, [isLoggedIn]);
 
+  const fetchAllResponses = async () => {
+    let allData = [];
+    let from = 0;
+    const step = 1000;
+    let keepGoing = true;
+
+    while (keepGoing) {
+      const { data, error } = await supabase
+        .from('responses')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .range(from, from + step - 1);
+        
+      if (error) {
+        console.error('Error fetching responses:', error);
+        break;
+      }
+      
+      if (data && data.length > 0) {
+        allData = [...allData, ...data];
+        from += step;
+        // If we got fewer rows than we asked for, we've reached the end
+        if (data.length < step) keepGoing = false;
+      } else {
+        keepGoing = false;
+      }
+    }
+    return allData;
+  };
+
   const fetchData = async () => {
     setLoading(true);
-    const [responsesRes, mappingRes] = await Promise.all([
-      supabase.from('responses').select('*').order('created_at', { ascending: false }),
+    const [allResponses, mappingRes] = await Promise.all([
+      fetchAllResponses(),
       supabase.from('tsm_mapping').select('*')
     ]);
 
     setData({
-      responses: responsesRes.data || [],
+      responses: allResponses || [],
       mapping: mappingRes.data || []
     });
     setLoading(false);

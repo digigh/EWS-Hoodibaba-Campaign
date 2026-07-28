@@ -10,12 +10,34 @@ export const sendWebhookEvent = async (eventName, payload) => {
     const urlParams = new URLSearchParams(window.location.search);
     const tsm = urlParams.get('tsm') || urlParams.get('tsm_id') || 'unknown';
     const currentUrl = window.location.href;
+    
+    let territory = null;
+    let region = null;
+
+    if (eventName === 'form_submitted') {
+      // 1. Fetch the territory and region from tsm_mapping table
+      // Convert "Ensan-Ali" to "Ensan Ali" for the database lookup
+      const searchTsm = tsm.replace(/-/g, ' ');
+
+      const { data: tsmData, error: tsmError } = await supabase
+        .from('tsm_mapping')
+        .select('territory, region')
+        .ilike('tsm_name', searchTsm)
+        .single();
+        
+      if (!tsmError && tsmData) {
+        territory = tsmData.territory;
+        region = tsmData.region;
+      }
+    }
 
     const data = {
       event: eventName,
       timestamp,
       tsm,
       url: currentUrl,
+      territory,
+      region,
       ...payload
     };
 
@@ -46,7 +68,9 @@ export const sendWebhookEvent = async (eventName, payload) => {
           state: payload.state,
           district: payload.district,
           language: payload.language,
-          url: currentUrl
+          url: currentUrl,
+          territory: territory,
+          region: region
         }]);
       
       if (dbError) {
