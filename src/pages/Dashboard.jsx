@@ -10,7 +10,7 @@ import {
 import { 
   Eye, Users, MousePointerClick, ShoppingBag, ArrowUpRight, MoreHorizontal, 
   Calendar, Filter, RefreshCw, Download, MapPin, Map, Navigation, Box,
-  Trophy, Home
+  Trophy, Home, Award, LayoutDashboard, ChevronDown, ChevronUp
 } from 'lucide-react';
 
 const COLORS = ['#4318ff', '#6ad2ff', '#ff6b6b', '#05cd99', '#ffb547'];
@@ -21,7 +21,8 @@ export const Dashboard = () => {
   const [data, setData] = useState({ responses: [], mapping: [] });
   const [loading, setLoading] = useState(true);
   const [showDownloadModal, setShowDownloadModal] = useState(false);
-  const [currentView, setCurrentView] = useState('main'); // 'main' or 'metrics'
+  const [currentView, setCurrentView] = useState('main'); // 'main', 'performers', 'metrics'
+  const [expandedRegions, setExpandedRegions] = useState({});
   
   const [filters, setFilters] = useState({
     region: '', territory: '', tsm: '', state: '', district: '', crop: '', product: '', language: '', startDate: '', endDate: ''
@@ -255,6 +256,112 @@ export const Dashboard = () => {
       .slice(0, 10);
   };
 
+  // Performer Data Calculation
+  const performerData = useMemo(() => {
+    const tsmCounts = {};
+    filteredData.forEach(r => {
+      const key = normalizeTSM(r.tsm_name);
+      if (key && key !== 'unknown') {
+        tsmCounts[key] = (tsmCounts[key] || 0) + 1;
+      }
+    });
+
+    const regionMap = {};
+    const predefinedRegions = [
+      'WEST 1', 'WEST 2',
+      'SOUTH 1', 'SOUTH 2', 'SOUTH 3',
+      'NORTH 1', 'NORTH 2',
+      'EAST 1', 'EAST 2', 'EAST 3'
+    ];
+
+    predefinedRegions.forEach(reg => {
+      regionMap[reg] = [];
+    });
+
+    data.mapping.forEach(m => {
+      const region = m.region;
+      if (!region || region === 'Unknown' || region === 'OTHER') return;
+      if (!regionMap[region]) regionMap[region] = [];
+      const tsmKey = normalizeTSM(m.tsm_name);
+      if (tsmKey && tsmKey !== 'unknown' && !regionMap[region].some(t => normalizeTSM(t.tsm_name) === tsmKey)) {
+        regionMap[region].push({
+          tsm_name: m.tsm_name,
+          tsm_display: m.tsm_name ? m.tsm_name.trim().replace(/\s+/g, '-') : '',
+          territory: m.territory || '',
+          count: tsmCounts[tsmKey] || 0
+        });
+      }
+    });
+
+    filteredData.forEach(r => {
+      const region = r.region;
+      const tsmKey = normalizeTSM(r.tsm_name);
+      if (!region || region === 'Unknown' || region === 'OTHER' || !tsmKey || tsmKey === 'unknown') return;
+      if (!regionMap[region]) regionMap[region] = [];
+      if (!regionMap[region].some(t => normalizeTSM(t.tsm_name) === tsmKey)) {
+        regionMap[region].push({
+          tsm_name: r.tsm_name || '',
+          tsm_display: (r.tsm_name || '').trim().replace(/\s+/g, '-'),
+          territory: r.territory || '',
+          count: tsmCounts[tsmKey] || 0
+        });
+      }
+    });
+
+    const allRegionKeys = Object.keys(regionMap).filter(k => k !== 'Unknown' && k !== 'OTHER');
+    const orderedKeys = [
+      ...predefinedRegions.filter(r => allRegionKeys.includes(r)),
+      ...allRegionKeys.filter(r => !predefinedRegions.includes(r)).sort()
+    ];
+
+    return orderedKeys.map(regionName => {
+      const tsms = regionMap[regionName]
+        .filter(t => t.tsm_name && normalizeTSM(t.tsm_name) !== 'unknown')
+        .sort((a, b) => b.count - a.count);
+      const eligibleCount = tsms.filter(t => t.count >= 500).length;
+      return {
+        region: regionName,
+        tsms,
+        top3: tsms.slice(0, 3),
+        eligibleCount,
+        totalCount: tsms.length
+      };
+    });
+  }, [data.mapping, filteredData]);
+
+  const getStatusDotClass = (count) => {
+    if (count >= 500) return 'status-dot-green';
+    if (count >= 100) return 'status-dot-yellow';
+    return 'status-dot-red';
+  };
+
+  const getFooterClass = (eligible, total) => {
+    if (total === 0) return 'footer-eligible-none';
+    if (eligible === total) return 'footer-eligible-all';
+    if (eligible > 0) return 'footer-eligible-partial';
+    return 'footer-eligible-none';
+  };
+
+  const downloadPerformerCSV = () => {
+    let csvContent = "Region,Rank,TSM,Territory,Farmer Responses,Status\n";
+    performerData.forEach(reg => {
+      reg.tsms.forEach((t, idx) => {
+        let status = t.count >= 500 ? 'ELIGIBLE' : (t.count >= 100 ? 'NOT ELIGIBLE' : 'NEED ATTENTION');
+        csvContent += `"${reg.region}",${idx + 1},"${t.tsm_display}","${t.territory || ''}",${t.count},"${status}"\n`;
+      });
+    });
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `ews_performer_report_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   const downloadTop10CSV = () => {
     const categories = [
       { key: 'tsm', title: 'Top 10 TSMs' },
@@ -314,32 +421,50 @@ export const Dashboard = () => {
         </div>
 
         <div className="header-actions">
-          {currentView === 'main' ? (
-            <>
-              <button className="btn-glowing" onClick={() => setCurrentView('metrics')}>
-                <Trophy size={16} /> Top 10 Metrics
-              </button>
-              <button className="btn-primary" onClick={resetFilters}>
-                <RefreshCw size={16} /> Reset
-              </button>
-              <button className="btn-primary" onClick={triggerDownload} style={{ background: '#05cd99', boxShadow: '0px 4px 10px rgba(5, 205, 153, 0.3)' }}>
-                <Download size={16} /> Export CSV
-              </button>
-            </>
-          ) : (
-            <>
-              <button className="btn-primary" onClick={() => setCurrentView('main')}>
-                <Home size={16} /> Back to Dashboard
-              </button>
-              <button className="btn-primary" onClick={downloadTop10CSV} style={{ background: '#05cd99', boxShadow: '0px 4px 10px rgba(5, 205, 153, 0.3)' }}>
-                <Download size={16} /> Download Report
-              </button>
-            </>
+          <button 
+            className={`nav-tab-btn ${currentView === 'main' ? 'active' : ''}`} 
+            onClick={() => setCurrentView('main')}
+          >
+            <LayoutDashboard size={16} /> Overview
+          </button>
+          <button 
+            className={`nav-tab-btn ${currentView === 'performers' ? 'active' : ''}`} 
+            onClick={() => setCurrentView('performers')}
+          >
+            <Award size={16} /> Performer
+          </button>
+          <button 
+            className={`btn-glowing ${currentView === 'metrics' ? 'active' : ''}`} 
+            onClick={() => setCurrentView('metrics')}
+          >
+            <Trophy size={16} /> Top 10 Metrics
+          </button>
+
+          <button className="btn-primary" onClick={resetFilters} title="Reset Filters" style={{ background: '#718096', boxShadow: 'none' }}>
+            <RefreshCw size={16} /> Reset
+          </button>
+
+          {currentView === 'main' && (
+            <button className="btn-primary" onClick={triggerDownload} style={{ background: '#05cd99', boxShadow: '0px 4px 10px rgba(5, 205, 153, 0.3)' }}>
+              <Download size={16} /> Export CSV
+            </button>
+          )}
+
+          {currentView === 'performers' && (
+            <button className="btn-primary" onClick={downloadPerformerCSV} style={{ background: '#05cd99', boxShadow: '0px 4px 10px rgba(5, 205, 153, 0.3)' }}>
+              <Download size={16} /> Download Report
+            </button>
+          )}
+
+          {currentView === 'metrics' && (
+            <button className="btn-primary" onClick={downloadTop10CSV} style={{ background: '#05cd99', boxShadow: '0px 4px 10px rgba(5, 205, 153, 0.3)' }}>
+              <Download size={16} /> Download Report
+            </button>
           )}
         </div>
       </div>
 
-      {currentView === 'main' ? (
+      {currentView === 'main' && (
         <>
       {/* Filter Bar */}
       <div className="filters-bar">
@@ -662,7 +787,136 @@ export const Dashboard = () => {
         </div>
       </div>
         </>
-      ) : (
+      )}
+
+      {currentView === 'performers' && (
+        <div>
+          {/* Top Legend and Controls */}
+          <div className="performer-legend-container" style={{ justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '28px', flexWrap: 'wrap' }}>
+              <div className="legend-item">
+                <span className="status-dot status-dot-green"></span>
+                <span>≥ 500 (ELIGIBLE)</span>
+              </div>
+              <div className="legend-item">
+                <span className="status-dot status-dot-yellow"></span>
+                <span>&lt; 500 (NOT ELIGIBLE)</span>
+              </div>
+              <div className="legend-item">
+                <span className="status-dot status-dot-red"></span>
+                <span>&lt; 100 (VERY LOW) – NEED ATTENTION</span>
+              </div>
+            </div>
+
+            <button 
+              className="performer-expand-btn"
+              onClick={() => {
+                const allExpanded = performerData.every(reg => expandedRegions[reg.region]);
+                const nextState = {};
+                performerData.forEach(reg => {
+                  nextState[reg.region] = !allExpanded;
+                });
+                setExpandedRegions(nextState);
+              }}
+              style={{ fontSize: '12px', padding: '6px 14px' }}
+            >
+              {performerData.every(reg => expandedRegions[reg.region]) ? (
+                <>
+                  <ChevronUp size={14} /> Collapse All Regions
+                </>
+              ) : (
+                <>
+                  <ChevronDown size={14} /> Expand All Regions
+                </>
+              )}
+            </button>
+          </div>
+
+          {/* 5-col Grid of Region Cards */}
+          <div className="performer-grid">
+            {performerData.map((reg) => {
+              const isExpanded = !!expandedRegions[reg.region];
+              const displayList = isExpanded ? reg.tsms : reg.top3;
+              const hasMore = reg.tsms.length > 3;
+
+              return (
+                <div key={reg.region} className="performer-card">
+                  <div className="performer-card-header">
+                    {reg.region}
+                  </div>
+                  <table className="performer-card-table">
+                    <thead>
+                      <tr>
+                        <th className="col-rank">RANK</th>
+                        <th className="col-tsm">TSM</th>
+                        <th className="col-data">FARMER DATA</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {displayList.map((t, idx) => (
+                        <tr key={idx}>
+                          <td>
+                            <div className="performer-rank-pill">{idx + 1}</div>
+                          </td>
+                          <td>
+                            <span className="performer-tsm-name" title={t.tsm_name}>
+                              {t.tsm_display}
+                            </span>
+                          </td>
+                          <td>
+                            <div className="performer-count-cell">
+                              <span>{t.count.toLocaleString()}</span>
+                              <span className={`status-dot ${getStatusDotClass(t.count)}`}></span>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                      {displayList.length === 0 && (
+                        <tr>
+                          <td colSpan="3" style={{ textAlign: 'center', padding: '16px', color: '#a3aed0' }}>
+                            No TSM data
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+
+                  {/* Expand / Collapse individual card */}
+                  {hasMore && (
+                    <div style={{ padding: '6px 10px', textAlign: 'center', background: '#fafbfc', borderTop: '1px solid #f1f5f9' }}>
+                      <button
+                        className="performer-expand-btn"
+                        onClick={() => {
+                          setExpandedRegions(prev => ({
+                            ...prev,
+                            [reg.region]: !prev[reg.region]
+                          }));
+                        }}
+                      >
+                        {isExpanded ? (
+                          <>
+                            Show Top 3 <ChevronUp size={12} />
+                          </>
+                        ) : (
+                          <>
+                            View All ({reg.tsms.length}) <ChevronDown size={12} />
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  )}
+
+                  <div className={`performer-card-footer ${getFooterClass(reg.eligibleCount, reg.totalCount)}`}>
+                    ELIGIBLE TSMs (≥500) : {reg.eligibleCount} / {reg.totalCount}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {currentView === 'metrics' && (
         <div className="top10-grid">
           {[
             { key: 'tsm', title: 'Top 10 TSMs', icon: <Eye size={20} color="#4318ff"/> },
